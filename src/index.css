@@ -1,0 +1,218 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --card: #E7EBEF;
+  --ring: #46ace7;
+  --input: #e5e7eb;
+  --muted: #f9fafb;
+  --accent: #e0f2fe;
+  --border: #e5e7eb;
+  --radius: 0.375rem;
+  --chart-1: #46ace7;
+  --chart-2: #2563eb;
+  --chart-3: #1d4ed8;
+  --chart-4: #1e40af;
+  --chart-5: #1e3a8a;
+  --popover: #E7EBEF;
+  --primary: #46ace7;
+  --sidebar: #f9fafb;
+  --font-mono: JetBrains Mono, monospace;
+  --font-sans: Inter, sans-serif;
+  --secondary: #f3f4f6;
+  --background: #E7EBEF;
+  --font-serif: Source Serif 4, serif;
+  --foreground: #333333;
+  --destructive: #ef4444;
+  --sidebar-ring: #46ace7;
+  --sidebar-accent: #e0f2fe;
+  --sidebar-border: #e5e7eb;
+  --card-foreground: #333333;
+  --sidebar-primary: #46ace7;
+  --muted-foreground: #6b7280;
+  --accent-foreground: #1e3a8a;
+  --popover-foreground: #333333;
+  --primary-foreground: #E7EBEF;
+  --sidebar-foreground: #3f3a3a;
+  --secondary-foreground: #4b5563;
+  --destructive-foreground: #E7EBEF;
+  --sidebar-accent-foreground: #1e3a8a;
+  --sidebar-primary-foreground: #E7EBEF;
+}
+
+.dark {
+  --card: #262626;
+  --ring: #46ace7;
+  --input: #404040;
+  --muted: #1f1f1f;
+  --accent: #1e3a8a;
+  --border: #404040;
+  --radius: 0.375rem;
+  --chart-1: #60a5fa;
+  --chart-2: #46ace7;
+  --chart-3: #2563eb;
+  --chart-4: #1d4ed8;
+  --chart-5: #1e40af;
+  --popover: #262626;
+  --primary: #46ace7;
+  --sidebar: #171717;
+  --secondary: #262626;
+  --background: #212121;
+  --foreground: #e5e5e5;
+  --destructive: #ef4444;
+  --sidebar-ring: #46ace7;
+  --sidebar-accent: #1e3a8a;
+  --sidebar-border: #404040;
+  --card-foreground: #e5e5e5;
+  --sidebar-primary: #46ace7;
+  --muted-foreground: #a3a3a3;
+  --accent-foreground: #bfdbfe;
+  --popover-foreground: #e5e5e5;
+  --primary-foreground: #E7EBEF;
+  --sidebar-foreground: #e5e5e5;
+  --secondary-foreground: #e5e5e5;
+  --destructive-foreground: #E7EBEF;
+  --sidebar-accent-foreground: #bfdbfe;
+  --sidebar-primary-foreground: #E7EBEF;
+}
+
+@theme inline {
+  --color-card: var(--card);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-radius: var(--radius);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-sidebar: var(--sidebar);
+  --color-font-mono: var(--font-mono);
+  --color-font-sans: var(--font-sans);
+  --color-secondary: var(--secondary);
+  --color-background: var(--background);
+  --color-font-serif: var(--font-serif);
+  --color-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-card-foreground: var(--card-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+  }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+  }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+  }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent! dark:invert;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none !important;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes gem-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(120px) rotate(360deg); opacity: 0; }
+}
+
+.animate-shake {
+  animation: shake 0.45s ease-in-out;
+}
+
+.animate-gem-pop {
+  animation: gem-pop 0.35s ease-out;
+}
+
+.animate-confetti {
+  animation: confetti-fall 1.4s ease-out forwards;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(85, 85, 85, 0.6) 0%, rgba(255, 92, 122, 0.6) 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(10, 10, 10, 0.3);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(85, 85, 85, 0.8) 0%, rgba(255, 92, 122, 0.8) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, rgba(85, 85, 85, 1) 0%, rgba(255, 92, 122, 1) 100%);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(85, 85, 85, 0.6) rgba(10, 10, 10, 0.3);
+}
