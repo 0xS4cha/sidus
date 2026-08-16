@@ -484,7 +484,6 @@ function MapMarker({
       element: document.createElement("div"),
       draggable,
     }).setLngLat([longitude, latitude]);
-
     const handleClick = (e: MouseEvent) => callbacksRef.current.onClick?.(e);
     const handleMouseEnter = (e: MouseEvent) =>
       callbacksRef.current.onMouseEnter?.(e);
@@ -2186,6 +2185,210 @@ function MapClusterLayer<
   return null;
 }
 
+type MapPointsDatum = {
+
+  id: string | number;
+
+  longitude: number;
+
+  latitude: number;
+
+  [key: string]: unknown;
+};
+
+
+type MapPointsEvent<T extends MapPointsDatum = MapPointsDatum> = {
+  point: T;
+  longitude: number;
+  latitude: number;
+  originalEvent: MapLibreGL.MapLayerMouseEvent;
+};
+
+type MapCirclePaint = NonNullable<MapLibreGL.CircleLayerSpecification["paint"]>;
+
+type MapPointsProps<T extends MapPointsDatum = MapPointsDatum> = {
+  data: T[];
+  id?: string;
+
+  paint?: MapCirclePaint;
+
+  hoverPaint?: MapCirclePaint;
+  onClick?: (e: MapPointsEvent<T>) => void;
+  onHover?: (e: MapPointsEvent<T> | null) => void;
+  interactive?: boolean;
+  beforeId?: string;
+};
+
+const DEFAULT_POINTS_PAINT: MapCirclePaint = {
+  "circle-radius": 5,
+  "circle-color": "#4285F4",
+  "circle-stroke-width": 1.5,
+  "circle-stroke-color": "#ffffff",
+};
+
+
+function MapPoints<T extends MapPointsDatum = MapPointsDatum>({
+  data,
+  id: propId,
+  paint,
+  hoverPaint,
+  onClick,
+  onHover,
+  interactive = true,
+  beforeId,
+}: MapPointsProps<T>) {
+  const { map, isLoaded } = useMap();
+  const autoId = useId();
+  const id = propId ?? autoId;
+  const sourceId = `points-source-${id}`;
+  const layerId = `points-layer-${id}`;
+
+  const mergedPaint = useMemo(
+    () => mergeHoverPaint({ ...DEFAULT_POINTS_PAINT, ...paint }, hoverPaint),
+    [paint, hoverPaint],
+  );
+
+  const geoJSON = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: data.map((p) => {
+        const { longitude, latitude, ...properties } = p;
+        return {
+          type: "Feature",
+          id: p.id,
+          properties,
+          geometry: { type: "Point", coordinates: [longitude, latitude] },
+        };
+      }),
+    }),
+    [data],
+  );
+
+  const latestRef = useRef({ data, onClick, onHover });
+  latestRef.current = { data, onClick, onHover };
+
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: geoJSON,
+      promoteId: "id",
+    });
+
+    map.addLayer(
+      { id: layerId, type: "circle", source: sourceId, paint: mergedPaint },
+      beforeId,
+    );
+
+    return () => {
+      try {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      } catch {
+      }
+    };
+  }, [isLoaded, map]);
+
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+    const source = map.getSource(sourceId) as
+      | MapLibreGL.GeoJSONSource
+      | undefined;
+    source?.setData(geoJSON);
+  }, [isLoaded, map, geoJSON, sourceId]);
+
+  useEffect(() => {
+    if (!isLoaded || !map || !map.getLayer(layerId)) return;
+    for (const [key, value] of Object.entries(mergedPaint)) {
+      map.setPaintProperty(
+        layerId,
+        key as keyof MapCirclePaint,
+        value as never,
+      );
+    }
+  }, [isLoaded, map, layerId, mergedPaint]);
+
+  useEffect(() => {
+    if (!isLoaded || !map || !interactive) return;
+
+    let hoveredId: string | number | null = null;
+
+    const setHover = (next: string | number | null) => {
+      if (next === hoveredId) return;
+      const sourceExists = !!map.getSource(sourceId);
+      if (hoveredId != null && sourceExists) {
+        map.setFeatureState(
+          { source: sourceId, id: hoveredId },
+          { hover: false },
+        );
+      }
+      hoveredId = next;
+      if (next != null && sourceExists) {
+        map.setFeatureState({ source: sourceId, id: next }, { hover: true });
+      }
+    };
+
+    const findPoint = (featureId: string | number | undefined) =>
+      featureId == null
+        ? undefined
+        : latestRef.current.data.find(
+            (p) => String(p.id) === String(featureId),
+          );
+
+    const handleMouseMove = (e: MapLibreGL.MapLayerMouseEvent) => {
+      const featureId = e.features?.[0]?.id as string | number | undefined;
+      if (featureId == null || featureId === hoveredId) return;
+
+      setHover(featureId);
+      map.getCanvas().style.cursor = "pointer";
+
+      const point = findPoint(featureId);
+      if (point) {
+        latestRef.current.onHover?.({
+          point: point as T,
+          longitude: e.lngLat.lng,
+          latitude: e.lngLat.lat,
+          originalEvent: e,
+        });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      setHover(null);
+      map.getCanvas().style.cursor = "";
+      latestRef.current.onHover?.(null);
+    };
+
+    const handleClick = (e: MapLibreGL.MapLayerMouseEvent) => {
+      const point = findPoint(
+        e.features?.[0]?.id as string | number | undefined,
+      );
+      if (!point) return;
+      latestRef.current.onClick?.({
+        point: point as T,
+        longitude: e.lngLat.lng,
+        latitude: e.lngLat.lat,
+        originalEvent: e,
+      });
+    };
+
+    map.on("mousemove", layerId, handleMouseMove);
+    map.on("mouseleave", layerId, handleMouseLeave);
+    map.on("click", layerId, handleClick);
+
+    return () => {
+      map.off("mousemove", layerId, handleMouseMove);
+      map.off("mouseleave", layerId, handleMouseLeave);
+      map.off("click", layerId, handleClick);
+      setHover(null);
+      map.getCanvas().style.cursor = "";
+    };
+  }, [isLoaded, map, layerId, sourceId, interactive]);
+
+  return null;
+}
+
 export {
   Map,
   useMap,
@@ -2193,6 +2396,7 @@ export {
   MarkerContent,
   MarkerPopup,
   MarkerTooltip,
+  MapPoints,
   MarkerLabel,
   MapPopup,
   MapControls,
@@ -2204,6 +2408,9 @@ export {
 
 export type {
   MapRef,
+  MapPointsDatum,
+  MapPointsEvent,
+  MapPointsProps,
   MapViewport,
   MapStyleOption,
   MapArcDatum,
@@ -2224,3 +2431,4 @@ export type {
   MapGeoJSONProps,
   MapClusterLayerProps,
 };
+
