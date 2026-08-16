@@ -601,7 +601,7 @@ function MarkerContent({ children, className }: MarkerContentProps) {
 
 function DefaultMarkerIcon() {
   return (
-    <div className="relative h-4 w-4 rounded-full border-2 border-white bg-blue-500 shadow-lg" />
+    <div className="relative h-4 w-4 rounded-full border-2 border-white shadow-lg" />
   );
 }
 
@@ -1905,7 +1905,7 @@ type MapClusterLayerProps<
 };
 
 const DEFAULT_CLUSTER_COLORS: [string, string, string] = [
-  "#3b82f6",
+  "#0062ff",
   "#1d4ed8",
   "#1e3a8a",
 ];
