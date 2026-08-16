@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import { getSatellitePosition } from "@/lib/getSatellitePosition";
 import { SatelliteOMM } from "@/types/satellite";
-import SatelliteList from "@/assets/satellite.json";
+import { StationOMM } from "@/types/station";
+import SatelliteList from "@/assets/satellites.json";
+import StationList from "@/assets/stations.json";
+
 import {
   Map,
   MapPoints,
@@ -11,13 +14,13 @@ import {
   type MapPointsDatum,
 } from "@/components/ui/map";
 
-interface SatellitePoint extends MapPointsDatum {
+interface GlobePoint extends MapPointsDatum {
   name: string;
 }
 
 export default function Home() {
-  const satellites = useMemo<SatellitePoint[]>(() => {
-    const result: SatellitePoint[] = [];
+  const satellites = useMemo<GlobePoint[]>(() => {
+    const result: GlobePoint[] = [];
     for (const satellite of SatelliteList as SatelliteOMM[]) {
       const position = getSatellitePosition(satellite);
       if (position) {
@@ -32,7 +35,23 @@ export default function Home() {
     return result;
   }, []);
 
-  const [hovered, setHovered] = useState<SatellitePoint | null>(null);
+  const stations = useMemo<GlobePoint[]>(() => {
+    const result: GlobePoint[] = [];
+    for (const station of StationList as StationOMM[]) {
+      const position = getSatellitePosition(station);
+      if (position) {
+        result.push({
+          id: station.OBJECT_NAME,
+          name: station.OBJECT_NAME,
+          longitude: position.longitude,
+          latitude: position.latitude,
+        });
+      }
+    }
+    return result;
+  }, []);
+
+  const [hovered, setHovered] = useState<GlobePoint | null>(null);
 
   return (
     <div className="absolute h-full w-full">
@@ -46,6 +65,18 @@ export default function Home() {
           hoverPaint={{
             "circle-radius": 4,
             "circle-color": "#60a5fa",
+          }}
+          onHover={(e) => setHovered(e?.point ?? null)}
+        />
+        <MapPoints
+          data={stations}
+          paint={{
+            "circle-radius": 2,
+            "circle-color": "#80f63b",
+          }}
+          hoverPaint={{
+            "circle-radius": 4,
+            "circle-color": "#a5fa60",
           }}
           onHover={(e) => setHovered(e?.point ?? null)}
         />
