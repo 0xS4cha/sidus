@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { getSatellitePosition } from "@/lib/getSatellitePosition";
 import { SatelliteOMM } from "@/types/satellite";
 import { StationOMM } from "@/types/station";
@@ -14,50 +14,94 @@ import {
   type MapPointsDatum,
 } from "@/components/ui/map";
 
+const ObjTypes = {
+  satellite: "satellite",
+  station: "station",
+} as const;
+
+type ObjType = typeof ObjTypes[keyof typeof ObjTypes];
+
 interface GlobePoint extends MapPointsDatum {
+  type: ObjType;
   name: string;
 }
 
+
+const REFRESH_INTERVAL_MS = 500;
+
+function computeSatellitePositions(now: Date): GlobePoint[] {
+  const result: GlobePoint[] = [];
+  for (const obj of SatelliteList as SatelliteOMM[]) {
+    const position = getSatellitePosition(obj, now);
+    if (position) {
+      result.push({
+        type: ObjTypes.satellite,
+        id: obj.OBJECT_NAME,
+        name: obj.OBJECT_NAME,
+        longitude: position.longitude,
+        latitude: position.latitude,
+      });
+    }
+  }
+
+  for (const obj of StationList as StationOMM[]) {
+    const position = getSatellitePosition(obj, now);
+    if (position) {
+      result.push({
+        type: ObjTypes.station,
+        id: obj.OBJECT_NAME,
+        name: obj.OBJECT_NAME,
+        longitude: position.longitude,
+        latitude: position.latitude,
+      });
+    }
+  }
+
+  return result;
+}
+
+
+
 export default function Home() {
-  const satellites = useMemo<GlobePoint[]>(() => {
-    const result: GlobePoint[] = [];
-    for (const satellite of SatelliteList as SatelliteOMM[]) {
-      const position = getSatellitePosition(satellite);
-      if (position) {
-        result.push({
-          id: satellite.OBJECT_NAME,
-          name: satellite.OBJECT_NAME,
-          longitude: position.longitude,
-          latitude: position.latitude,
-        });
-      }
-    }
-    return result;
+  const [objects, setObjects] = useState<GlobePoint[]>(() =>
+    computeSatellitePositions(new Date()),
+  );
+ 
+  useEffect(() => {
+    const intervalRef = { current: null as ReturnType<typeof setInterval> | null };
+ 
+    const tick = () => setObjects(computeSatellitePositions(new Date()));
+ 
+    const start = () => {
+      if (intervalRef.current) return;
+      tick();
+      intervalRef.current = setInterval(tick, REFRESH_INTERVAL_MS);
+    };
+    const stop = () => {
+      if (!intervalRef.current) return;
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
+ 
+    const handleVisibility = () => (document.hidden ? stop() : start());
+ 
+    start();
+    document.addEventListener("visibilitychange", handleVisibility);
+ 
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
-
-  const stations = useMemo<GlobePoint[]>(() => {
-    const result: GlobePoint[] = [];
-    for (const station of StationList as StationOMM[]) {
-      const position = getSatellitePosition(station);
-      if (position) {
-        result.push({
-          id: station.OBJECT_NAME,
-          name: station.OBJECT_NAME,
-          longitude: position.longitude,
-          latitude: position.latitude,
-        });
-      }
-    }
-    return result;
-  }, []);
-
-  const [hovered, setHovered] = useState<GlobePoint | null>(null);
-
+ 
+  const [hoveredId, setHoveredId] = useState<string | number | null>(null);
+  const hovered = objects.find((s) => s.id === hoveredId) ?? null;
+ 
   return (
     <div className="absolute h-full w-full">
       <Map zoom={1} projection={{ type: "globe" }}>
         <MapPoints
-          data={satellites}
+          data={objects}
           paint={{
             "circle-radius": 2,
             "circle-color": "#3b82f6",
@@ -66,21 +110,9 @@ export default function Home() {
             "circle-radius": 4,
             "circle-color": "#60a5fa",
           }}
-          onHover={(e) => setHovered(e?.point ?? null)}
+          onHover={(e) => setHoveredId(e?.point.id ?? null)}
         />
-        <MapPoints
-          data={stations}
-          paint={{
-            "circle-radius": 2,
-            "circle-color": "#80f63b",
-          }}
-          hoverPaint={{
-            "circle-radius": 4,
-            "circle-color": "#a5fa60",
-          }}
-          onHover={(e) => setHovered(e?.point ?? null)}
-        />
-
+ 
         {hovered && (
           <MapMarker longitude={hovered.longitude} latitude={hovered.latitude}>
             <MarkerContent className="pointer-events-none">
