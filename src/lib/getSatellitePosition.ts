@@ -10,10 +10,8 @@ export function getSatellitePosition(
 
     const state = satellite.propagate(satrec, date);
     if (!state) {
+        // console.log(`${data.OBJECT_NAME} has SGP4 error: ${satrec.error}`)
         return null;
-        // throw new Error(
-        // `SGP4 error: ${satrec.error}`
-        // );
     }
     const positionEci = state.position;
 

@@ -1,13 +1,23 @@
-import { useState, useEffect } from "react";
-import { getSatellitePosition } from "@/lib/getSatellitePosition";
-import { SatelliteOMM } from "@/types/satellite";
-import { StationOMM } from "@/types/station";
-import SatelliteList from "@/assets/satellites.json";
-import StationList from "@/assets/stations.json";
-
+import { useState, useEffect, useRef } from "react";
+import { computePositions } from "@/lib/computePosition"
+import { layers } from "@/lib/layers"
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Satellite, RadioTower } from "lucide-react";
+import { GlobePoint } from "@/types/points"
+import {
+  Satellite,
+  RadioTower,
+} from "lucide-react"
+
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command"
 
 import {
   Map,
@@ -17,96 +27,40 @@ import {
   MarkerLabel,
   MapPopup,
   MapControls,
-  type MapPointsDatum,
 } from "@/components/ui/map";
 
-const ObjTypes = {
-  satellite: "satellite",
-  station: "station",
-} as const;
-
-type ObjType = typeof ObjTypes[keyof typeof ObjTypes];
-
-const ObjCompanies = {
-  starlink: "Starlink",
-  unknow: "Unknow",
-} as const;
-
-type ObjCompany = typeof ObjCompanies[keyof typeof ObjCompanies];
-
-interface GlobePoint extends MapPointsDatum {
-  company: ObjCompany;
-  type: ObjType;
-  name: string;
-}
 
 const REFRESH_INTERVAL_MS = 500;
 
-function computeSatellitePositions(now: Date): GlobePoint[] {
-  const result: GlobePoint[] = [];
-  for (const obj of SatelliteList as SatelliteOMM[]) {
-    const position = getSatellitePosition(obj, now);
-    if (position) {
-      const company = obj.OBJECT_NAME.includes("STARLINK") ? ObjCompanies.starlink : ObjCompanies.unknow
-      result.push({
-        type: ObjTypes.satellite,
-        company: company,
-        id: obj.OBJECT_NAME,
-        name: obj.OBJECT_ID,
-        longitude: position.longitude,
-        latitude: position.latitude,
-      });
-    }
-  }
 
-  for (const obj of StationList as StationOMM[]) {
-    const position = getSatellitePosition(obj, now);
-    if (position) {
-      result.push({
-        type: ObjTypes.station,
-        company: ObjCompanies.unknow,
-        id: obj.OBJECT_NAME,
-        name: obj.OBJECT_ID,
-        longitude: position.longitude,
-        latitude: position.latitude,
-      });
-    }
-  }
-
-  return result;
-}
 
 export default function Home() {
-  const [objects, setObjects] = useState<GlobePoint[]>(() =>
-    computeSatellitePositions(new Date()),
+  const [objects, setObjects] = useState<GlobePoint[]>([])
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(
+    () => new Set(layers.filter(l => l.defaultActive).map(l => l.id))
   );
 
+  const activeLayersRef = useRef(activeLayers);
+  useEffect(() => { activeLayersRef.current = activeLayers; }, [activeLayers]);
+
   useEffect(() => {
-    const intervalRef = { current: null as ReturnType<typeof setInterval> | null };
-
-    const tick = () => setObjects(computeSatellitePositions(new Date()));
-
-    const start = () => {
-      if (intervalRef.current) return;
-      tick();
-      intervalRef.current = setInterval(tick, REFRESH_INTERVAL_MS);
-    };
-    const stop = () => {
-      if (!intervalRef.current) return;
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    };
-
-    const handleVisibility = () => (document.hidden ? stop() : start());
-
+    const tick = () => setObjects(computePositions(new Date(), activeLayersRef.current));
+    let id: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (!id) { tick(); id = setInterval(tick, REFRESH_INTERVAL_MS); } };
+    const stop = () => { if (id) { clearInterval(id); id = null; } };
+    const onVis = () => (document.hidden ? stop() : start());
     start();
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
   }, []);
+
+  const toggleLayer = (id: string) =>
+    setActiveLayers(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const [viewCommands, setViewCommands] = useState<boolean>(false);
 
   const [hoveredId, setHoveredId] = useState<string | number | null>(null);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
@@ -115,6 +69,24 @@ export default function Home() {
 
   return (
     <div className="absolute h-full w-full">
+      <div className="flex flex-col gap-4">
+        <CommandDialog open={viewCommands} onOpenChange={setViewCommands}>
+          <Command>
+            <CommandInput placeholder="Type a command or search..." />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup heading="Layers">
+                {layers.map(({ id, label, icon: Icon }) => (
+                  <CommandItem key={id} onSelect={() => toggleLayer(id)}>
+                    <Icon />
+                    <span>{activeLayers.has(id) ? `Disable ${label}` : `Enable ${label}`}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </CommandDialog>
+      </div>
       <Map zoom={1} projection={{ type: "globe" }}>
         <MapControls
           position="top-right"
@@ -122,11 +94,14 @@ export default function Home() {
           showCompass
           showLocate
           showFullscreen
+          showCommands
+          setCommands={setViewCommands}
+          commands={viewCommands}
         />
         <MapPoints
           data={objects}
           paint={{
-            "circle-radius": 2,
+            "circle-radius": 5,
             "circle-color": "#3b82f6",
           }}
           hoverPaint={{
@@ -136,7 +111,6 @@ export default function Home() {
           onClick={(e) => setSelectedId(e?.point.id ?? null)}
           onHover={(e) => setHoveredId(e?.point.id ?? null)}
         />
-
         {hovered && !selected && (
           <MapMarker longitude={hovered.longitude} latitude={hovered.latitude}>
             <MarkerContent className="pointer-events-none">
@@ -158,7 +132,7 @@ export default function Home() {
             <div className="w-64 space-y-3 p-4">
               <div className="flex items-start gap-3">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  {selected.type === ObjTypes.satellite ? (
+                  {selected.type === "satellite" ? (
                     <Satellite className="size-4" />
                   ) : (
                     <RadioTower className="size-4" />
@@ -181,7 +155,7 @@ export default function Home() {
                   {selected.type}
                 </Badge>
                 <Badge
-                  variant={selected.company === ObjCompanies.starlink ? "default" : "outline"}
+                  variant={selected.company === "starlink" ? "default" : "outline"}
                 >
                   {selected.company}
                 </Badge>

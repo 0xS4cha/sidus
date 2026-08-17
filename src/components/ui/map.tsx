@@ -16,7 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { X, Minus, Plus, Locate, Maximize, Loader2 } from "lucide-react";
+import { X, Minus, Plus, Locate, Maximize, Loader2, SlidersHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -801,6 +801,12 @@ type MapControlsProps = {
   showLocate?: boolean;
   /** Show fullscreen toggle button (default: false) */
   showFullscreen?: boolean;
+  
+  showCommands?: boolean;
+
+  setCommands?: any;
+
+  commands?: boolean;
   /** Additional CSS classes for the controls container */
   className?: string;
   /** Callback with user coordinates when located */
@@ -858,12 +864,14 @@ function MapControls({
   showCompass = false,
   showLocate = false,
   showFullscreen = false,
+  showCommands = false,
+  setCommands,
+  commands,
   className,
   onLocate,
 }: MapControlsProps) {
   const { map } = useMap();
   const [waitingForLocation, setWaitingForLocation] = useState(false);
-
   const handleZoomIn = useCallback(() => {
     map?.zoomTo(map.getZoom() + 1, { duration: 300 });
   }, [map]);
@@ -913,6 +921,10 @@ function MapControls({
     }
   }, [map]);
 
+  const handleCommands = useCallback(() => {
+    setCommands(!commands)
+  }, [map]);
+
   return (
     <div
       className={cn(
@@ -958,6 +970,15 @@ function MapControls({
           </ControlButton>
         </ControlGroup>
       )}
+
+      {showCommands && (
+        <ControlGroup>
+          <ControlButton onClick={handleCommands} label="Show commands">
+            <SlidersHorizontal className="size-4" />
+          </ControlButton>
+        </ControlGroup>
+      )}
+
     </div>
   );
 }
