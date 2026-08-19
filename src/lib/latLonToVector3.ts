@@ -5,16 +5,16 @@ export function latLonToVector3(
     latitude: number,
     longitude: number,
     altitudeKm: number
-) {
+): [number, number, number] {
     const radius =
         EARTH_RADIUS * (1 + altitudeKm / EARTH_RADIUS_KM);
 
-    const lat = latitude * Math.PI / 180;
-    const lon = longitude * Math.PI / 180;
+    const phi = (90 - latitude) * (Math.PI / 180);
+    const theta = (longitude + 180) * (Math.PI / 180);
 
     return [
-        radius * Math.cos(lat) * Math.cos(lon),
-        radius * Math.sin(lat),
-        radius * Math.cos(lat) * Math.sin(lon),
-    ] as [number, number, number];
+        -radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta),
+    ];
 }
