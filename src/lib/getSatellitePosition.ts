@@ -1,12 +1,12 @@
 import * as satellite from "satellite.js";
 
-import { SatelliteOMM } from "@/types/satellite";
+import { ObjData } from "@/types/satellite";
 
 export function getSatellitePosition(
-  data: SatelliteOMM,
+  data: ObjData,
   date: Date = new Date()
 ) {
-    const satrec = satellite.json2satrec(data);
+    const satrec = satellite.twoline2satrec(`1 ${data.informations}`, `2 ${data.orbital}`);;
 
     const state = satellite.propagate(satrec, date);
     if (!state) {

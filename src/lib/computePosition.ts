@@ -11,11 +11,11 @@ export function computePositions(now: Date, activeLayers: Set<string>): GlobePoi
       if (!position) continue;
       result.push({
         type: layer.id,
-        company: layer.getCompany?.(obj) ?? "Unknow",
-        id: obj.OBJECT_NAME,
-        name: obj.OBJECT_ID,
+        id: obj.name,
+        name: obj.name,
         longitude: position.longitude,
         latitude: position.latitude,
+        altitude: position.altitude
       });
     }
   }

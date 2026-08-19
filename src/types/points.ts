@@ -5,7 +5,7 @@ import {
 
 
 export interface GlobePoint extends MapPointsDatum {
-  company: string;
   type: string;
   name: string;
+  altitude: number;
 }
