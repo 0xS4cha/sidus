@@ -1,6 +1,6 @@
 import { Satellite, type LucideIcon } from "lucide-react";
-import data from "@/assets/data.json";
 import { ObjData } from "@/types/satellite";
+import data  from "@/assets/data.json";
 
 export interface LayerConfig<T = any> {
   id: string;

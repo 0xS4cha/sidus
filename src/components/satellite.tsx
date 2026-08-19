@@ -1,4 +1,5 @@
-import { GlobePoint } from "@/types/points"
+import { Instance } from "@react-three/drei";
+import { GlobePoint } from "@/types/points";
 import { latLonToVector3 } from "@/lib/latLonToVector3";
 
 export function Satellite({ object }: { object: GlobePoint }) {
@@ -8,10 +9,5 @@ export function Satellite({ object }: { object: GlobePoint }) {
         object.altitude
     );
 
-    return (
-        <mesh position={position}>
-            <sphereGeometry args={[0.01, 8, 8]} />
-            <meshBasicMaterial color="red" />
-        </mesh>
-    );
+    return <Instance position={position} />;
 }

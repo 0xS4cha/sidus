@@ -1,6 +1,6 @@
 import { Canvas, useLoader } from '@react-three/fiber'
 import { useState, useEffect, useRef } from "react";
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Instances } from '@react-three/drei'
 import { TextureLoader } from 'three'
 import { GlobePoint } from "@/types/points"
 import { computePositions } from "@/lib/computePosition"
@@ -8,7 +8,7 @@ import { layers } from "@/lib/layers"
 import { Satellite } from '@/components/satellite';
 import earthTexture from "@/assets/earth-realistic-8k.webp"
 
-const REFRESH_INTERVAL_MS = 10000000000;
+const REFRESH_INTERVAL_MS = 10000;
 
 export default function Track() {
     const texture = useLoader(TextureLoader, earthTexture);
@@ -30,22 +30,30 @@ export default function Track() {
     }, []);
 
     return (
-    <div className="absolute h-full w-full">
-        <Canvas camera={{ position: [0, 0, 5] }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1.5} />
-        <OrbitControls />
-        <mesh>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshStandardMaterial map={texture} />
-        </mesh>
-        {objects.map((object) => (
-            <Satellite
-                key={object.id}
-                object={object}
-            />
-        ))}
-        </Canvas>
-    </div>
-    )
+        <div className="absolute h-full w-full">
+            <Canvas camera={{ position: [0, 0, 5] }}>
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[10, 10, 5]} intensity={1.5} />
+                <OrbitControls />
+                
+                <mesh>
+                    <sphereGeometry args={[1, 64, 64]} />
+                    <meshStandardMaterial map={texture} />
+                </mesh>
+
+                <Instances limit={objects.length}>
+                    <sphereGeometry args={[0.005, 8, 8]} />
+                    <meshBasicMaterial color="red" />
+                    
+                    {objects.map((object) => (
+                        <Satellite
+                            key={object.id}
+                            object={object}
+                        />
+                    ))}
+                </Instances>
+                
+            </Canvas>
+        </div>
+    );
 }

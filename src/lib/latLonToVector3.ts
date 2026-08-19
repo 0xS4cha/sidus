@@ -6,8 +6,7 @@ export function latLonToVector3(
     longitude: number,
     altitudeKm: number
 ): [number, number, number] {
-    const radius =
-        EARTH_RADIUS * (1 + altitudeKm / EARTH_RADIUS_KM);
+    const radius = EARTH_RADIUS * (1 + altitudeKm / EARTH_RADIUS_KM);
 
     const phi = (90 - latitude) * (Math.PI / 180);
     const theta = (longitude + 180) * (Math.PI / 180);
